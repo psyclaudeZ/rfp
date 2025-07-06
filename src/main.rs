@@ -1,7 +1,17 @@
+use log::{debug, warn};
 use rfpp::parser::FilePathParser;
+use std::env;
 use std::io::{self, BufRead, BufReader};
 
 fn main() -> io::Result<()> {
+    env_logger::init();
+    #[warn(unused_variables)]
+    let editor = env::var("EDITOR").unwrap_or_else(|_| {
+        warn!("EDITOR environment variable not set, using vim");
+        "vim".to_string()
+    });
+    debug!("Read $EDITOR: {}", editor);
+
     let lines = process_input();
     let parser = FilePathParser::new();
 
