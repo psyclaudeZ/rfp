@@ -1,9 +1,13 @@
 use log::{debug, warn};
 use rfpp::parser::FilePathParser;
 use std::env;
-use std::io::{self, BufRead, BufReader};
+use std::io::{self, stdin, BufRead, BufReader, IsTerminal};
 
 fn main() -> io::Result<()> {
+    if stdin().is_terminal() {
+        // TODO: this
+        panic!("TODO: Gracefully handle this i.e. help message and exit code.");
+    }
     env_logger::init();
     #[warn(unused_variables)]
     let editor = env::var("EDITOR").unwrap_or_else(|_| {
