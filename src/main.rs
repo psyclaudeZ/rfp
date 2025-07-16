@@ -1,10 +1,8 @@
-use crossterm::event::{self, Event};
 use log::{debug, warn};
-use ratatui::{
-    widgets::{List, ListItem},
-    DefaultTerminal, Frame,
+use rfpp::{
+    parser::{FilePathParser, MatchResult},
+    tui::run,
 };
-use rfpp::parser::{FilePathParser, MatchResult};
 use std::env;
 use std::io::{self, stdin, BufRead, BufReader, IsTerminal};
 
@@ -34,10 +32,7 @@ fn main() -> io::Result<()> {
             matches.push(match_result);
         }
     }
-
-    let terminal = ratatui::init();
-    run_selection(terminal, &matches)?;
-    ratatui::restore();
+    run(&matches)?;
     Ok(())
 }
 
@@ -46,23 +41,4 @@ fn process_input() -> io::Result<Vec<String>> {
     // TODO: come back to double check the perf for large input
     let reader = BufReader::new(stdin.lock());
     return reader.lines().collect();
-}
-
-fn run_selection(mut terminal: DefaultTerminal, matches: &Vec<MatchResult>) -> io::Result<()> {
-    loop {
-        terminal.draw(|frame| render(frame, matches))?;
-        if matches!(event::read()?, Event::Key(_)) {
-            break Ok(());
-        }
-    }
-}
-fn render(frame: &mut Frame, matches: &Vec<MatchResult>) {
-    if matches.len() == 0 {
-        frame.render_widget("No file paths are found!", frame.area())
-    }
-    let items: Vec<ListItem> = matches
-        .iter()
-        .map(|m| ListItem::new(m.path.clone()))
-        .collect();
-    frame.render_widget(List::new(items), frame.area());
 }
