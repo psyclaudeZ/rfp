@@ -5,4 +5,5 @@
 //! TODO - complete the doc
 
 pub mod parser;
+pub mod pipe;
 pub mod tui;
