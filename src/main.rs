@@ -9,8 +9,8 @@ fn main() -> io::Result<()> {
     // TODO: along with others, handle the errors gracefully
     preflight_check()?;
 
-    let matches = pipe::run()?;
-    tui::run(&matches)?;
+    let candidates = pipe::run()?;
+    tui::run(&candidates)?;
     Ok(())
 }
 
