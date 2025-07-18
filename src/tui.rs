@@ -67,20 +67,23 @@ fn run_selection(mut terminal: DefaultTerminal, selectables: &mut Selectables) -
     loop {
         terminal.draw(|frame| render(frame, selectables))?;
         // TODO: error handling
-        handle_events(selectables)?;
+        handle_keypress(selectables)?;
     }
 }
 
-fn handle_events(selectables: &mut Selectables) -> io::Result<()> {
-    if let Event::Key(key) = event::read()? {
-        if key.kind == KeyEventKind::Press {
-            match key.code {
-                KeyCode::Char('j') => selectables.next(),
-                KeyCode::Char('k') => selectables.prev(),
-                // TODO: is this the Rustacean way?
-                _ => return Err(io::Error::new(io::ErrorKind::Interrupted, "user quit")),
-            }
-        }
+fn handle_keypress(selectables: &mut Selectables) -> io::Result<()> {
+    let Event::Key(key) = event::read()? else {
+        return Ok(());
+    };
+    if key.kind != KeyEventKind::Press {
+        return Ok(());
+    }
+
+    match key.code {
+        KeyCode::Char('j') => selectables.next(),
+        KeyCode::Char('k') => selectables.prev(),
+        // TODO: is this the Rustacean way?
+        _ => return Err(io::Error::new(io::ErrorKind::Interrupted, "user quit")),
     }
     Ok(())
 }
