@@ -12,10 +12,10 @@ struct Selectables {
 
 impl Selectables {
     fn new(items: Vec<String>) -> Selectables {
-        Selectables {
-            items,
-            state: ListState::default(),
-        }
+        assert!(items.len() > 0);
+        let mut s = ListState::default();
+        s.select(Some(0));
+        Selectables { items, state: s }
     }
 
     fn step(&mut self, is_increment: bool) {
@@ -58,9 +58,9 @@ pub fn run(candidates: &[String]) -> io::Result<()> {
     }
     let terminal = ratatui::init();
     let mut selectables = Selectables::new(candidates.to_vec());
-    run_selection(terminal, &mut selectables)?;
+    let result = run_selection(terminal, &mut selectables);
     ratatui::restore();
-    Ok(())
+    result
 }
 
 fn run_selection(mut terminal: DefaultTerminal, selectables: &mut Selectables) -> io::Result<()> {
@@ -77,6 +77,7 @@ fn handle_events(selectables: &mut Selectables) -> io::Result<()> {
             match key.code {
                 KeyCode::Char('j') => selectables.next(),
                 KeyCode::Char('k') => selectables.prev(),
+                // TODO: is this the Rustacean way?
                 _ => return Err(io::Error::new(io::ErrorKind::Interrupted, "user quit")),
             }
         }
@@ -90,8 +91,6 @@ fn render(frame: &mut Frame, selectables: &mut Selectables) {
         .iter()
         .map(|cand| ListItem::new(cand.as_str()))
         .collect();
-    frame.render_stateful_widget(List::new(items), frame.area(), &mut selectables.state);
-
-    // FIXME - add selection
-    selectables.next();
+    let list = List::new(items).highlight_symbol(">");
+    frame.render_stateful_widget(list, frame.area(), &mut selectables.state);
 }
