@@ -17,38 +17,6 @@ impl Selectables {
         s.select(Some(0));
         Selectables { items, state: s }
     }
-
-    fn step(&mut self, is_increment: bool) {
-        let length = self.items.len();
-        let i = match self.state.selected() {
-            Some(i) => {
-                // Hmm can I use tenerary
-                if is_increment {
-                    if i + 1 >= length {
-                        0
-                    } else {
-                        i + 1
-                    }
-                } else {
-                    if i == 0 {
-                        length - 1
-                    } else {
-                        i - 1
-                    }
-                }
-            }
-            None => 0,
-        };
-        self.state.select(Some(i));
-    }
-
-    fn next(&mut self) {
-        self.step(true);
-    }
-
-    fn prev(&mut self) {
-        self.step(false);
-    }
 }
 
 pub fn run(candidates: &[String]) -> io::Result<()> {
@@ -80,8 +48,8 @@ fn handle_keypress(selectables: &mut Selectables) -> io::Result<()> {
     }
 
     match key.code {
-        KeyCode::Char('j') => selectables.next(),
-        KeyCode::Char('k') => selectables.prev(),
+        KeyCode::Char('j') => selectables.state.select_next(),
+        KeyCode::Char('k') => selectables.state.select_previous(),
         // TODO: is this the Rustacean way?
         _ => return Err(io::Error::new(io::ErrorKind::Interrupted, "user quit")),
     }
