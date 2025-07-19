@@ -1,21 +1,34 @@
 use crossterm::event::{self, Event, KeyCode, KeyEventKind};
 use ratatui::{
+    style::{Color, Style},
     widgets::{List, ListItem, ListState},
     DefaultTerminal, Frame,
 };
 use std::io::{self};
 
+enum KeyPressAction {
+    Continue,
+    Quit,
+    Submit,
+}
+
 struct Selectables {
     items: Vec<String>,
-    state: ListState,
+    cursor: ListState,
+    selected: Vec<bool>,
 }
 
 impl Selectables {
     fn new(items: Vec<String>) -> Selectables {
         assert!(items.len() > 0);
+        let len = items.len();
         let mut s = ListState::default();
         s.select(Some(0));
-        Selectables { items, state: s }
+        Selectables {
+            items,
+            cursor: s,
+            selected: vec![false; len],
+        }
     }
 }
 
@@ -28,40 +41,82 @@ pub fn run(candidates: &[String]) -> io::Result<()> {
     let mut selectables = Selectables::new(candidates.to_vec());
     let result = run_selection(terminal, &mut selectables);
     ratatui::restore();
-    result
+    let selected = result?;
+    if selected.is_empty() {
+        println!("Nothing selected.");
+    } else {
+        println!("Selected: {:?}", selected);
+    }
+    Ok(())
 }
 
-fn run_selection(mut terminal: DefaultTerminal, selectables: &mut Selectables) -> io::Result<()> {
+fn run_selection(
+    mut terminal: DefaultTerminal,
+    selectables: &mut Selectables,
+) -> io::Result<Vec<String>> {
     loop {
         terminal.draw(|frame| render(frame, selectables))?;
         // TODO: error handling
-        handle_keypress(selectables)?;
+        match handle_keypress(selectables)? {
+            KeyPressAction::Continue => {}
+            KeyPressAction::Quit => break Ok(vec![]),
+            KeyPressAction::Submit => {
+                break Ok(selectables
+                    .selected
+                    .iter()
+                    .enumerate()
+                    .filter(|(_, is_selected)| **is_selected)
+                    .map(|(i, _)| selectables.items[i].clone())
+                    .collect());
+            }
+        }
     }
 }
 
-fn handle_keypress(selectables: &mut Selectables) -> io::Result<()> {
+fn handle_keypress(selectables: &mut Selectables) -> io::Result<KeyPressAction> {
     let Event::Key(key) = event::read()? else {
-        return Ok(());
+        return Ok(KeyPressAction::Continue);
     };
     if key.kind != KeyEventKind::Press {
-        return Ok(());
+        return Ok(KeyPressAction::Continue);
     }
 
     match key.code {
-        KeyCode::Char('j') => selectables.state.select_next(),
-        KeyCode::Char('k') => selectables.state.select_previous(),
-        // TODO: is this the Rustacean way?
-        _ => return Err(io::Error::new(io::ErrorKind::Interrupted, "user quit")),
+        KeyCode::Char('j') => selectables.cursor.select_next(),
+        KeyCode::Char('k') => selectables.cursor.select_previous(),
+        KeyCode::Char(' ') => {
+            let idx = selectables
+                .cursor
+                .selected()
+                .expect("Cursor should be pointing to an item.");
+            selectables.selected[idx] = !selectables.selected[idx];
+        }
+        KeyCode::Char('a') => {
+            if selectables.selected.iter().all(|&s| s) {
+                selectables.selected.fill(false)
+            } else {
+                selectables.selected.fill(true)
+            }
+        }
+        KeyCode::Enter => return Ok(KeyPressAction::Submit),
+        _ => return Ok(KeyPressAction::Quit),
     }
-    Ok(())
+    Ok(KeyPressAction::Continue)
 }
 
 fn render(frame: &mut Frame, selectables: &mut Selectables) {
     let items: Vec<ListItem> = selectables
         .items
         .iter()
-        .map(|cand| ListItem::new(cand.as_str()))
+        .enumerate()
+        .map(|(i, item)| {
+            ListItem::new(item.as_str()).style(if selectables.selected[i] {
+                Style::default().bg(Color::LightBlue)
+            } else {
+                Style::default()
+            })
+        })
         .collect();
     let list = List::new(items).highlight_symbol(">");
-    frame.render_stateful_widget(list, frame.area(), &mut selectables.state);
+    frame.render_stateful_widget(list, frame.area(), &mut selectables.cursor);
 }
