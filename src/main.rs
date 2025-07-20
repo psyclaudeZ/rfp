@@ -10,7 +10,7 @@ fn main() -> io::Result<()> {
     preflight_check()?;
 
     let candidates = pipe::run()?;
-    tui::run(&candidates)?;
+    tui::run(candidates)?;
     Ok(())
 }
 

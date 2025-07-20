@@ -20,7 +20,7 @@ struct Selectables {
 
 impl Selectables {
     fn new(items: Vec<String>) -> Selectables {
-        assert!(items.len() > 0);
+        assert!(!items.is_empty());
         let len = items.len();
         let mut s = ListState::default();
         s.select(Some(0));
@@ -32,13 +32,13 @@ impl Selectables {
     }
 }
 
-pub fn run(candidates: &[String]) -> io::Result<()> {
-    if candidates.len() == 0 {
+pub fn run(candidates: Vec<String>) -> io::Result<()> {
+    if candidates.is_empty() {
         print!("No paths found!");
         return Ok(());
     }
     let terminal = ratatui::init();
-    let mut selectables = Selectables::new(candidates.to_vec());
+    let mut selectables = Selectables::new(candidates);
     let result = run_selection(terminal, &mut selectables);
     ratatui::restore();
     let selected = result?;
@@ -85,10 +85,7 @@ fn handle_keypress(selectables: &mut Selectables) -> io::Result<KeyPressAction> 
         KeyCode::Char('j') => selectables.cursor.select_next(),
         KeyCode::Char('k') => selectables.cursor.select_previous(),
         KeyCode::Char(' ') => {
-            let idx = selectables
-                .cursor
-                .selected()
-                .expect("Cursor should be pointing to an item.");
+            let idx = selectables.cursor.selected().unwrap();
             selectables.selected[idx] = !selectables.selected[idx];
         }
         KeyCode::Char('a') => {
