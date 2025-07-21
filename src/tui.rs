@@ -85,7 +85,10 @@ fn handle_keypress(selectables: &mut Selectables) -> io::Result<KeyPressAction> 
         KeyCode::Char('j') => selectables.cursor.select_next(),
         KeyCode::Char('k') => selectables.cursor.select_previous(),
         KeyCode::Char(' ') => {
-            let idx = selectables.cursor.selected().unwrap();
+            let idx = selectables
+                .cursor
+                .selected()
+                .expect("There should always be one item selected.");
             selectables.selected[idx] = !selectables.selected[idx];
         }
         KeyCode::Char('a') => {
