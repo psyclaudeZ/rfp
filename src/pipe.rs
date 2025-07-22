@@ -17,8 +17,9 @@ pub fn run() -> io::Result<Vec<String>> {
                 match_result.path, match_result.line_number
             );
             if Path::new(&match_result.path).try_exists().unwrap_or(false)
-                && seen.insert(match_result.path.clone())
+                && !seen.contains(&match_result.path)
             {
+                seen.insert(match_result.path.clone());
                 matches.push(match_result.path);
             }
         }
