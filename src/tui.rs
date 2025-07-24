@@ -32,22 +32,15 @@ impl Selectables {
     }
 }
 
-pub fn run(candidates: Vec<String>) -> io::Result<()> {
+pub fn run(candidates: Vec<String>) -> io::Result<Vec<String>> {
     if candidates.is_empty() {
-        print!("No paths found!");
-        return Ok(());
+        return Ok(vec![]);
     }
     let terminal = ratatui::init();
     let mut selectables = Selectables::new(candidates);
     let result = run_selection(terminal, &mut selectables);
     ratatui::restore();
-    let selected = result?;
-    if selected.is_empty() {
-        println!("Nothing selected.");
-    } else {
-        println!("Selected: {:?}", selected);
-    }
-    Ok(())
+    result
 }
 
 fn run_selection(
