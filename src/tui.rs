@@ -6,7 +6,9 @@ use ratatui::{
 };
 use std::io::{self};
 
-enum KeyPressAction {
+#[derive(PartialEq)]
+pub enum TUILoopEvent {
+    EarlyReturn,
     Continue,
     Quit,
     Submit,
@@ -32,9 +34,9 @@ impl Selectables {
     }
 }
 
-pub fn run(candidates: Vec<String>) -> io::Result<Vec<String>> {
+pub fn run(candidates: Vec<String>) -> io::Result<(Vec<String>, TUILoopEvent)> {
     if candidates.is_empty() {
-        return Ok(vec![]);
+        return Ok((vec![], TUILoopEvent::EarlyReturn));
     }
     let terminal = ratatui::init();
     let mut selectables = Selectables::new(candidates);
@@ -46,32 +48,38 @@ pub fn run(candidates: Vec<String>) -> io::Result<Vec<String>> {
 fn run_selection(
     mut terminal: DefaultTerminal,
     selectables: &mut Selectables,
-) -> io::Result<Vec<String>> {
+) -> io::Result<(Vec<String>, TUILoopEvent)> {
     loop {
         terminal.draw(|frame| render(frame, selectables))?;
         // TODO: error handling
         match handle_keypress(selectables)? {
-            KeyPressAction::Continue => {}
-            KeyPressAction::Quit => break Ok(vec![]),
-            KeyPressAction::Submit => {
-                break Ok(selectables
-                    .selected
-                    .iter()
-                    .enumerate()
-                    .filter(|(_, is_selected)| **is_selected)
-                    .map(|(i, _)| selectables.items[i].clone())
-                    .collect());
+            TUILoopEvent::Continue => {}
+            TUILoopEvent::Quit => break Ok((vec![], TUILoopEvent::Quit)),
+            TUILoopEvent::Submit => {
+                break Ok((
+                    selectables
+                        .selected
+                        .iter()
+                        .enumerate()
+                        .filter(|(_, is_selected)| **is_selected)
+                        .map(|(i, _)| selectables.items[i].clone())
+                        .collect(),
+                    TUILoopEvent::Submit,
+                ));
+            }
+            TUILoopEvent::EarlyReturn => {
+                panic!("Key press yields an invalid event!");
             }
         }
     }
 }
 
-fn handle_keypress(selectables: &mut Selectables) -> io::Result<KeyPressAction> {
+fn handle_keypress(selectables: &mut Selectables) -> io::Result<TUILoopEvent> {
     let Event::Key(key) = event::read()? else {
-        return Ok(KeyPressAction::Continue);
+        return Ok(TUILoopEvent::Continue);
     };
     if key.kind != KeyEventKind::Press {
-        return Ok(KeyPressAction::Continue);
+        return Ok(TUILoopEvent::Continue);
     }
 
     match key.code {
@@ -105,12 +113,12 @@ fn handle_keypress(selectables: &mut Selectables) -> io::Result<KeyPressAction> 
                 selectables.selected.fill(true)
             }
         }
-        KeyCode::Char('q') => return Ok(KeyPressAction::Quit),
-        KeyCode::Esc => return Ok(KeyPressAction::Quit),
-        KeyCode::Enter => return Ok(KeyPressAction::Submit),
-        _ => return Ok(KeyPressAction::Continue),
+        KeyCode::Char('q') => return Ok(TUILoopEvent::Quit),
+        KeyCode::Esc => return Ok(TUILoopEvent::Quit),
+        KeyCode::Enter => return Ok(TUILoopEvent::Submit),
+        _ => return Ok(TUILoopEvent::Continue),
     }
-    Ok(KeyPressAction::Continue)
+    Ok(TUILoopEvent::Continue)
 }
 
 fn render(frame: &mut Frame, selectables: &mut Selectables) {

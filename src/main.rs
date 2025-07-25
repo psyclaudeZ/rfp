@@ -1,4 +1,5 @@
 use log::{debug, warn};
+use rfpp::tui::TUILoopEvent;
 use rfpp::{pipe, tui};
 use std::env;
 use std::io::{self, stdin, IsTerminal};
@@ -23,9 +24,13 @@ fn main() -> io::Result<()> {
     let config = preflight_check()?;
 
     let candidates = pipe::run()?;
-    let paths = tui::run(candidates)?;
+    let (paths, action) = tui::run(candidates)?;
     if paths.is_empty() {
-        print!("No paths found!");
+        if action == TUILoopEvent::Submit {
+            println!("No paths selected.");
+        } else if action == TUILoopEvent::EarlyReturn {
+            println!("No paths found.");
+        }
     } else {
         Command::new(config.editor).args(paths).status()?;
     }
