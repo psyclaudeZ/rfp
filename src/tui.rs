@@ -75,8 +75,22 @@ fn handle_keypress(selectables: &mut Selectables) -> io::Result<KeyPressAction> 
     }
 
     match key.code {
-        KeyCode::Char('j') => selectables.cursor.select_next(),
-        KeyCode::Char('k') => selectables.cursor.select_previous(),
+        KeyCode::Char('j') => {
+            if selectables.cursor.selected().unwrap() == selectables.items.len() - 1 {
+                selectables.cursor.select_first()
+            } else {
+                selectables.cursor.select_next()
+            }
+        }
+        KeyCode::Char('k') => {
+            if selectables.cursor.selected().unwrap() == 0 {
+                selectables.cursor.select_last()
+            } else {
+                selectables.cursor.select_previous()
+            }
+        }
+        KeyCode::Char('g') => selectables.cursor.select_first(),
+        KeyCode::Char('G') => selectables.cursor.select_last(),
         KeyCode::Char(' ') => {
             let idx = selectables
                 .cursor
@@ -91,8 +105,10 @@ fn handle_keypress(selectables: &mut Selectables) -> io::Result<KeyPressAction> 
                 selectables.selected.fill(true)
             }
         }
+        KeyCode::Char('q') => return Ok(KeyPressAction::Quit),
+        KeyCode::Esc => return Ok(KeyPressAction::Quit),
         KeyCode::Enter => return Ok(KeyPressAction::Submit),
-        _ => return Ok(KeyPressAction::Quit),
+        _ => return Ok(KeyPressAction::Continue),
     }
     Ok(KeyPressAction::Continue)
 }
