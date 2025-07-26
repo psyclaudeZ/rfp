@@ -39,8 +39,8 @@ fn main() -> io::Result<()> {
 
 fn preflight_check() -> io::Result<Config> {
     if stdin().is_terminal() {
-        // TODO: this
-        panic!("TODO: Gracefully handle this i.e. help mejjjssage and exit code.");
+        eprintln!("Error: No input provided. Please pipe data to thie command.");
+        std::process::exit(2);
     }
     let mut config = Config::default();
     config.editor = env::var("EDITOR").unwrap_or_else(|_| {
