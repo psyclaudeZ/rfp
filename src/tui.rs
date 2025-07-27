@@ -17,20 +17,20 @@ pub enum TUILoopEvent {
     Submit,
 }
 
-struct Selectables {
+struct TUIState {
     items: Vec<String>,
     cursor: ListState,
     selected: Vec<bool>,
     main_area_height: u16,
 }
 
-impl Selectables {
-    fn new(items: Vec<String>) -> Selectables {
+impl TUIState {
+    fn new(items: Vec<String>) -> TUIState {
         assert!(!items.is_empty());
         let len = items.len();
         let mut s = ListState::default();
         s.select(Some(0));
-        Selectables {
+        TUIState {
             items,
             cursor: s,
             selected: vec![false; len],
@@ -44,30 +44,30 @@ pub fn run(candidates: Vec<String>) -> io::Result<(Vec<String>, TUILoopEvent)> {
         return Ok((vec![], TUILoopEvent::EarlyReturn));
     }
     let terminal = ratatui::init();
-    let mut selectables = Selectables::new(candidates);
-    let result = run_selection(terminal, &mut selectables);
+    let mut tui_state = TUIState::new(candidates);
+    let result = run_selection(terminal, &mut tui_state);
     ratatui::restore();
     result
 }
 
 fn run_selection(
     mut terminal: DefaultTerminal,
-    selectables: &mut Selectables,
+    tui_state: &mut TUIState,
 ) -> io::Result<(Vec<String>, TUILoopEvent)> {
     loop {
-        terminal.draw(|frame| render(frame, selectables))?;
+        terminal.draw(|frame| render(frame, tui_state))?;
         // TODO: error handling
-        match handle_keypress(selectables)? {
+        match handle_keypress(tui_state)? {
             TUILoopEvent::Continue => {}
             TUILoopEvent::Quit => break Ok((vec![], TUILoopEvent::Quit)),
             TUILoopEvent::Submit => {
                 break Ok((
-                    selectables
+                    tui_state
                         .selected
                         .iter()
                         .enumerate()
                         .filter(|(_, is_selected)| **is_selected)
-                        .map(|(i, _)| selectables.items[i].clone())
+                        .map(|(i, _)| tui_state.items[i].clone())
                         .collect(),
                     TUILoopEvent::Submit,
                 ));
@@ -79,7 +79,7 @@ fn run_selection(
     }
 }
 
-fn handle_keypress(selectables: &mut Selectables) -> io::Result<TUILoopEvent> {
+fn handle_keypress(tui_state: &mut TUIState) -> io::Result<TUILoopEvent> {
     let Event::Key(key) = event::read()? else {
         return Ok(TUILoopEvent::Continue);
     };
@@ -90,74 +90,70 @@ fn handle_keypress(selectables: &mut Selectables) -> io::Result<TUILoopEvent> {
     match key.code {
         // down
         KeyCode::Char('j') => {
-            if selectables.cursor.selected().unwrap() == selectables.items.len() - 1 {
-                selectables.cursor.select_first()
+            if tui_state.cursor.selected().unwrap() == tui_state.items.len() - 1 {
+                tui_state.cursor.select_first()
             } else {
-                selectables.cursor.select_next()
+                tui_state.cursor.select_next()
             }
         }
         // down by 1/2 page
         KeyCode::Char('d') => {
-            if selectables.cursor.selected().unwrap() == selectables.items.len() - 1 {
-                selectables.cursor.select_first()
+            if tui_state.cursor.selected().unwrap() == tui_state.items.len() - 1 {
+                tui_state.cursor.select_first()
             } else {
-                selectables
+                tui_state
                     .cursor
-                    .scroll_down_by(selectables.main_area_height / 2);
+                    .scroll_down_by(tui_state.main_area_height / 2);
             }
         }
         // down by 1 page
         KeyCode::Char('f') => {
-            if selectables.cursor.selected().unwrap() == selectables.items.len() - 1 {
-                selectables.cursor.select_first()
+            if tui_state.cursor.selected().unwrap() == tui_state.items.len() - 1 {
+                tui_state.cursor.select_first()
             } else {
-                selectables
-                    .cursor
-                    .scroll_down_by(selectables.main_area_height);
+                tui_state.cursor.scroll_down_by(tui_state.main_area_height);
             }
         }
         // up
         KeyCode::Char('k') => {
-            if selectables.cursor.selected().unwrap() == 0 {
-                selectables.cursor.select_last()
+            if tui_state.cursor.selected().unwrap() == 0 {
+                tui_state.cursor.select_last()
             } else {
-                selectables.cursor.select_previous()
+                tui_state.cursor.select_previous()
             }
         }
         // up by 1/2 page
         KeyCode::Char('u') => {
-            if selectables.cursor.selected().unwrap() == 0 {
-                selectables.cursor.select_last()
+            if tui_state.cursor.selected().unwrap() == 0 {
+                tui_state.cursor.select_last()
             } else {
-                selectables
+                tui_state
                     .cursor
-                    .scroll_up_by(selectables.main_area_height / 2);
+                    .scroll_up_by(tui_state.main_area_height / 2);
             }
         }
         // up by 1 page
         KeyCode::Char('b') => {
-            if selectables.cursor.selected().unwrap() == 0 {
-                selectables.cursor.select_last()
+            if tui_state.cursor.selected().unwrap() == 0 {
+                tui_state.cursor.select_last()
             } else {
-                selectables
-                    .cursor
-                    .scroll_up_by(selectables.main_area_height);
+                tui_state.cursor.scroll_up_by(tui_state.main_area_height);
             }
         }
-        KeyCode::Char('g') => selectables.cursor.select_first(),
-        KeyCode::Char('G') => selectables.cursor.select_last(),
+        KeyCode::Char('g') => tui_state.cursor.select_first(),
+        KeyCode::Char('G') => tui_state.cursor.select_last(),
         KeyCode::Char(' ') => {
-            let idx = selectables
+            let idx = tui_state
                 .cursor
                 .selected()
                 .expect("There should always be one item selected.");
-            selectables.selected[idx] = !selectables.selected[idx];
+            tui_state.selected[idx] = !tui_state.selected[idx];
         }
         KeyCode::Char('a') => {
-            if selectables.selected.iter().all(|&s| s) {
-                selectables.selected.fill(false)
+            if tui_state.selected.iter().all(|&s| s) {
+                tui_state.selected.fill(false)
             } else {
-                selectables.selected.fill(true)
+                tui_state.selected.fill(true)
             }
         }
         KeyCode::Char('q') => return Ok(TUILoopEvent::Quit),
@@ -168,13 +164,13 @@ fn handle_keypress(selectables: &mut Selectables) -> io::Result<TUILoopEvent> {
     Ok(TUILoopEvent::Continue)
 }
 
-fn render(frame: &mut Frame, selectables: &mut Selectables) {
-    let items: Vec<ListItem> = selectables
+fn render(frame: &mut Frame, tui_state: &mut TUIState) {
+    let items: Vec<ListItem> = tui_state
         .items
         .iter()
         .enumerate()
         .map(|(i, item)| {
-            ListItem::new(item.as_str()).style(if selectables.selected[i] {
+            ListItem::new(item.as_str()).style(if tui_state.selected[i] {
                 Style::default().bg(Color::LightBlue)
             } else {
                 Style::default()
@@ -187,14 +183,14 @@ fn render(frame: &mut Frame, selectables: &mut Selectables) {
     let [main_area, sub_area] =
         Layout::vertical([Constraint::Percentage(90), Constraint::Percentage(10)])
             .areas(frame.area());
-    frame.render_stateful_widget(list, main_area, &mut selectables.cursor);
-    selectables.main_area_height = main_area.height;
+    frame.render_stateful_widget(list, main_area, &mut tui_state.cursor);
+    tui_state.main_area_height = main_area.height;
     frame.render_widget(
         Block::bordered().title_bottom(
             Line::from(format!(
                 "{}/{}",
-                selectables.cursor.selected().unwrap() + 1,
-                selectables.items.len(),
+                tui_state.cursor.selected().unwrap() + 1,
+                tui_state.items.len(),
             ))
             .right_aligned(),
         ),
