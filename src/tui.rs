@@ -3,6 +3,7 @@ use ratatui::{
     layout::Layout,
     prelude::Constraint,
     style::{Color, Style},
+    text::Line,
     widgets::{Block, List, ListItem, ListState},
     DefaultTerminal, Frame,
 };
@@ -142,7 +143,17 @@ fn render(frame: &mut Frame, selectables: &mut Selectables) {
     let [main_area, sub_area] =
         Layout::vertical([Constraint::Percentage(90), Constraint::Percentage(10)])
             .areas(frame.area());
-    frame.render_widget(Block::bordered(), main_area);
-    frame.render_widget(Block::bordered(), sub_area);
     frame.render_stateful_widget(list, main_area, &mut selectables.cursor);
+    frame.render_widget(
+        Block::bordered().title_bottom(
+            Line::from(format!(
+                "{}/{}",
+                selectables.cursor.selected().unwrap() + 1,
+                selectables.items.len()
+            ))
+            .right_aligned(),
+        ),
+        main_area,
+    );
+    frame.render_widget(Block::bordered(), sub_area);
 }
