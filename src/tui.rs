@@ -21,6 +21,7 @@ struct Selectables {
     items: Vec<String>,
     cursor: ListState,
     selected: Vec<bool>,
+    main_area_height: u16,
 }
 
 impl Selectables {
@@ -33,6 +34,7 @@ impl Selectables {
             items,
             cursor: s,
             selected: vec![false; len],
+            main_area_height: 0,
         }
     }
 }
@@ -86,6 +88,7 @@ fn handle_keypress(selectables: &mut Selectables) -> io::Result<TUILoopEvent> {
     }
 
     match key.code {
+        // down
         KeyCode::Char('j') => {
             if selectables.cursor.selected().unwrap() == selectables.items.len() - 1 {
                 selectables.cursor.select_first()
@@ -93,11 +96,52 @@ fn handle_keypress(selectables: &mut Selectables) -> io::Result<TUILoopEvent> {
                 selectables.cursor.select_next()
             }
         }
+        // down by 1/2 page
+        KeyCode::Char('d') => {
+            if selectables.cursor.selected().unwrap() == selectables.items.len() - 1 {
+                selectables.cursor.select_first()
+            } else {
+                selectables
+                    .cursor
+                    .scroll_down_by(selectables.main_area_height / 2);
+            }
+        }
+        // down by 1 page
+        KeyCode::Char('f') => {
+            if selectables.cursor.selected().unwrap() == selectables.items.len() - 1 {
+                selectables.cursor.select_first()
+            } else {
+                selectables
+                    .cursor
+                    .scroll_down_by(selectables.main_area_height);
+            }
+        }
+        // up
         KeyCode::Char('k') => {
             if selectables.cursor.selected().unwrap() == 0 {
                 selectables.cursor.select_last()
             } else {
                 selectables.cursor.select_previous()
+            }
+        }
+        // up by 1/2 page
+        KeyCode::Char('u') => {
+            if selectables.cursor.selected().unwrap() == 0 {
+                selectables.cursor.select_last()
+            } else {
+                selectables
+                    .cursor
+                    .scroll_up_by(selectables.main_area_height / 2);
+            }
+        }
+        // up by 1 page
+        KeyCode::Char('b') => {
+            if selectables.cursor.selected().unwrap() == 0 {
+                selectables.cursor.select_last()
+            } else {
+                selectables
+                    .cursor
+                    .scroll_up_by(selectables.main_area_height);
             }
         }
         KeyCode::Char('g') => selectables.cursor.select_first(),
@@ -144,12 +188,14 @@ fn render(frame: &mut Frame, selectables: &mut Selectables) {
         Layout::vertical([Constraint::Percentage(90), Constraint::Percentage(10)])
             .areas(frame.area());
     frame.render_stateful_widget(list, main_area, &mut selectables.cursor);
+    selectables.main_area_height = main_area.height;
     frame.render_widget(
         Block::bordered().title_bottom(
             Line::from(format!(
-                "{}/{}",
+                "{}/{} - {}",
                 selectables.cursor.selected().unwrap() + 1,
-                selectables.items.len()
+                selectables.items.len(),
+                main_area.height,
             ))
             .right_aligned(),
         ),
