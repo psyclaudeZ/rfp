@@ -1,7 +1,9 @@
 use crossterm::event::{self, Event, KeyCode, KeyEventKind};
 use ratatui::{
+    layout::Layout,
+    prelude::Constraint,
     style::{Color, Style},
-    widgets::{List, ListItem, ListState},
+    widgets::{Block, List, ListItem, ListState},
     DefaultTerminal, Frame,
 };
 use std::io::{self};
@@ -134,6 +136,13 @@ fn render(frame: &mut Frame, selectables: &mut Selectables) {
             })
         })
         .collect();
-    let list = List::new(items).highlight_symbol(">");
-    frame.render_stateful_widget(list, frame.area(), &mut selectables.cursor);
+    let list = List::new(items)
+        .highlight_symbol(">")
+        .block(Block::bordered());
+    let [main_area, sub_area] =
+        Layout::vertical([Constraint::Percentage(90), Constraint::Percentage(10)])
+            .areas(frame.area());
+    frame.render_widget(Block::bordered(), main_area);
+    frame.render_widget(Block::bordered(), sub_area);
+    frame.render_stateful_widget(list, main_area, &mut selectables.cursor);
 }
