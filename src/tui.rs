@@ -192,10 +192,9 @@ fn render(frame: &mut Frame, selectables: &mut Selectables) {
     frame.render_widget(
         Block::bordered().title_bottom(
             Line::from(format!(
-                "{}/{} - {}",
+                "{}/{}",
                 selectables.cursor.selected().unwrap() + 1,
                 selectables.items.len(),
-                main_area.height,
             ))
             .right_aligned(),
         ),
