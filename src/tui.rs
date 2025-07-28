@@ -28,18 +28,20 @@ struct TUIState {
 // h, l -
 const HELP_MESSAGE_ENTRIES: &[(&str, &str)] = &[
     ("q", "Exit"),
+    ("h", "Toggle help"),
+    ("", ""),
     ("space", "Toggle selection"),
     ("enter", "Open selected files"),
-    ("j/↓", "Move down"),
+    ("a", "Select all/none"),
+    ("", ""),
     ("k/↑", "Move up"),
+    ("j/↓", "Move down"),
     ("u", "Half page up"),
     ("d", "Half page down"),
-    ("b", "Full page up"),
-    ("f", "Full page down"),
-    ("g", "Go to top"),
-    ("G", "Go to bottom"),
-    ("a", "Select all/none"),
-    ("h", "Toggle help"),
+    ("b/PgUp", "Full page up"),
+    ("f/PgDn", "Full page down"),
+    ("g/Home", "Go to top"),
+    ("G/End", "Go to bottom"),
 ];
 
 impl TUIState {
@@ -108,7 +110,7 @@ fn handle_keypress(tui_state: &mut TUIState) -> io::Result<TUILoopEvent> {
 
     match key.code {
         // down
-        KeyCode::Char('j') => {
+        KeyCode::Char('j') | KeyCode::Down => {
             if tui_state.cursor.selected().unwrap() == tui_state.items.len() - 1 {
                 tui_state.cursor.select_first()
             } else {
@@ -126,7 +128,7 @@ fn handle_keypress(tui_state: &mut TUIState) -> io::Result<TUILoopEvent> {
             }
         }
         // down by 1 page
-        KeyCode::Char('f') => {
+        KeyCode::Char('f') | KeyCode::PageDown => {
             if tui_state.cursor.selected().unwrap() == tui_state.items.len() - 1 {
                 tui_state.cursor.select_first()
             } else {
@@ -134,7 +136,7 @@ fn handle_keypress(tui_state: &mut TUIState) -> io::Result<TUILoopEvent> {
             }
         }
         // up
-        KeyCode::Char('k') => {
+        KeyCode::Char('k') | KeyCode::Up => {
             if tui_state.cursor.selected().unwrap() == 0 {
                 tui_state.cursor.select_last()
             } else {
@@ -152,7 +154,7 @@ fn handle_keypress(tui_state: &mut TUIState) -> io::Result<TUILoopEvent> {
             }
         }
         // up by 1 page
-        KeyCode::Char('b') => {
+        KeyCode::Char('b') | KeyCode::PageUp => {
             if tui_state.cursor.selected().unwrap() == 0 {
                 tui_state.cursor.select_last()
             } else {
@@ -160,9 +162,9 @@ fn handle_keypress(tui_state: &mut TUIState) -> io::Result<TUILoopEvent> {
             }
         }
         // top of the list
-        KeyCode::Char('g') => tui_state.cursor.select_first(),
+        KeyCode::Char('g') | KeyCode::Home => tui_state.cursor.select_first(),
         // bottom of the list
-        KeyCode::Char('G') => tui_state.cursor.select_last(),
+        KeyCode::Char('G') | KeyCode::End => tui_state.cursor.select_last(),
         KeyCode::Char('h') => tui_state.is_showing_help = !tui_state.is_showing_help,
         KeyCode::Char(' ') => {
             let idx = tui_state
