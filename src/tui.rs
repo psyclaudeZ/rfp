@@ -1,10 +1,10 @@
 use crossterm::event::{self, Event, KeyCode, KeyEventKind};
 use ratatui::{
-    layout::Layout,
+    layout::{Flex, Layout, Rect},
     prelude::Constraint,
     style::{Color, Style},
     text::Line,
-    widgets::{Block, List, ListItem, ListState},
+    widgets::{Block, Clear, List, ListItem, ListState},
     DefaultTerminal, Frame,
 };
 use std::io::{self};
@@ -18,10 +18,11 @@ pub enum TUILoopEvent {
 }
 
 struct TUIState {
-    items: Vec<String>,
     cursor: ListState,
-    selected: Vec<bool>,
+    is_showing_help: bool,
+    items: Vec<String>,
     main_area_height: u16,
+    selected: Vec<bool>,
 }
 
 impl TUIState {
@@ -35,6 +36,7 @@ impl TUIState {
             cursor: s,
             selected: vec![false; len],
             main_area_height: 0,
+            is_showing_help: false,
         }
     }
 }
@@ -140,8 +142,11 @@ fn handle_keypress(tui_state: &mut TUIState) -> io::Result<TUILoopEvent> {
                 tui_state.cursor.scroll_up_by(tui_state.main_area_height);
             }
         }
+        // top of the list
         KeyCode::Char('g') => tui_state.cursor.select_first(),
+        // bottom of the list
         KeyCode::Char('G') => tui_state.cursor.select_last(),
+        KeyCode::Char('h') => tui_state.is_showing_help = !tui_state.is_showing_help,
         KeyCode::Char(' ') => {
             let idx = tui_state
                 .cursor
@@ -178,23 +183,43 @@ fn render(frame: &mut Frame, tui_state: &mut TUIState) {
         })
         .collect();
     let list = List::new(items)
-        .highlight_symbol(">")
+        .highlight_symbol(">>")
         .block(Block::bordered());
     let [main_area, sub_area] =
-        Layout::vertical([Constraint::Percentage(90), Constraint::Percentage(10)])
+        Layout::vertical([Constraint::Percentage(98), Constraint::Percentage(2)])
             .areas(frame.area());
     frame.render_stateful_widget(list, main_area, &mut tui_state.cursor);
     tui_state.main_area_height = main_area.height;
     frame.render_widget(
-        Block::bordered().title_bottom(
-            Line::from(format!(
-                "{}/{}",
-                tui_state.cursor.selected().unwrap() + 1,
-                tui_state.items.len(),
-            ))
-            .right_aligned(),
-        ),
+        Block::bordered()
+            .title_bottom(
+                Line::from(format!(
+                    " {}/{} ",
+                    tui_state.cursor.selected().unwrap() + 1,
+                    tui_state.items.len(),
+                ))
+                .left_aligned(),
+            )
+            .title_bottom(Line::from(" h for help ").right_aligned()),
         main_area,
     );
-    frame.render_widget(Block::bordered(), sub_area);
+    if tui_state.is_showing_help {
+        let popup_block = Block::bordered().title_top(Line::from("Help").centered());
+        let popup_area = popup_area(frame.area(), 60, 40);
+
+        //this clears out the background, DO NOT REMOVE
+        frame.render_widget(Clear, popup_area);
+        frame.render_widget(popup_block, popup_area);
+    }
+
+    frame.render_widget(Block::default(), sub_area);
+}
+
+/// helper function to create a centered rect using up certain percentage of the available rect `r`
+fn popup_area(area: Rect, percent_x: u16, percent_y: u16) -> Rect {
+    let vertical = Layout::vertical([Constraint::Percentage(percent_y)]).flex(Flex::Center);
+    let horizontal = Layout::horizontal([Constraint::Percentage(percent_x)]).flex(Flex::Center);
+    let [area] = vertical.areas(area);
+    let [area] = horizontal.areas(area);
+    area
 }
