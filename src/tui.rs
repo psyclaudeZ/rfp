@@ -4,7 +4,7 @@ use ratatui::{
     prelude::Constraint,
     style::{Color, Style},
     text::Line,
-    widgets::{Block, Clear, List, ListItem, ListState},
+    widgets::{Block, Clear, List, ListItem, ListState, Paragraph, Wrap},
     DefaultTerminal, Frame,
 };
 use std::io::{self};
@@ -24,6 +24,23 @@ struct TUIState {
     main_area_height: u16,
     selected: Vec<bool>,
 }
+
+// h, l -
+const HELP_MESSAGE_ENTRIES: &[(&str, &str)] = &[
+    ("q", "Exit"),
+    ("space", "Toggle selection"),
+    ("enter", "Open selected files"),
+    ("j/↓", "Move down"),
+    ("k/↑", "Move up"),
+    ("u", "Half page up"),
+    ("d", "Half page down"),
+    ("b", "Full page up"),
+    ("f", "Full page down"),
+    ("g", "Go to top"),
+    ("G", "Go to bottom"),
+    ("a", "Select all/none"),
+    ("h", "Toggle help"),
+];
 
 impl TUIState {
     fn new(items: Vec<String>) -> TUIState {
@@ -203,16 +220,50 @@ fn render(frame: &mut Frame, tui_state: &mut TUIState) {
             .title_bottom(Line::from(" h for help ").right_aligned()),
         main_area,
     );
-    if tui_state.is_showing_help {
-        let popup_block = Block::bordered().title_top(Line::from("Help").centered());
-        let popup_area = popup_area(frame.area(), 60, 40);
-
-        //this clears out the background, DO NOT REMOVE
-        frame.render_widget(Clear, popup_area);
-        frame.render_widget(popup_block, popup_area);
-    }
-
     frame.render_widget(Block::default(), sub_area);
+    if tui_state.is_showing_help {
+        render_help_message(frame);
+    }
+}
+
+fn render_help_message(frame: &mut Frame) {
+    // Setup
+    let popup_block = Block::bordered().title_top(Line::from("Help").centered());
+    let popup_area = popup_area(frame.area(), 40, 80);
+    let content_area = popup_block.inner(popup_area);
+
+    // This clears out the background, DO NOT REMOVE and core rendering should happen AFTER these.
+    frame.render_widget(Clear, popup_area);
+    frame.render_widget(popup_block, popup_area);
+
+    let [_margin, text_area] = Layout::vertical([
+        Constraint::Length(1), // Top margin (1 line)
+        Constraint::Min(0),
+    ])
+    .areas(content_area);
+
+    let rows: [Rect; HELP_MESSAGE_ENTRIES.len()] = Layout::vertical(vec![
+        Constraint::Length(1);
+        // Constraint::Ratio(1, HELP_MESSAGE_ENTRIES.len() as u32);
+        HELP_MESSAGE_ENTRIES.len()
+    ])
+    .areas(text_area);
+    for (i, &(key, desc)) in HELP_MESSAGE_ENTRIES.iter().enumerate() {
+        let columns: [Rect; 2] =
+            Layout::horizontal([Constraint::Percentage(50), Constraint::Percentage(50)])
+                .areas(rows[i]);
+        // Render content in each cell
+        frame.render_widget(
+            Paragraph::new(key).wrap(Wrap { trim: true }).centered(),
+            columns[0],
+        );
+        frame.render_widget(
+            Paragraph::new(desc)
+                .wrap(Wrap { trim: true })
+                .left_aligned(),
+            columns[1],
+        );
+    }
 }
 
 /// helper function to create a centered rect using up certain percentage of the available rect `r`
