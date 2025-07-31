@@ -28,7 +28,7 @@ struct TUIState {
 // h, l -
 const HELP_MESSAGE_ENTRIES: &[(&str, &str)] = &[
     ("q", "Exit"),
-    ("h", "Toggle help"),
+    ("?", "Toggle help"),
     ("", ""),
     ("space", "Toggle selection"),
     ("enter", "Open selected files"),
@@ -165,7 +165,7 @@ fn handle_keypress(tui_state: &mut TUIState) -> io::Result<TUILoopEvent> {
         KeyCode::Char('g') | KeyCode::Home => tui_state.cursor.select_first(),
         // bottom of the list
         KeyCode::Char('G') | KeyCode::End => tui_state.cursor.select_last(),
-        KeyCode::Char('h') => tui_state.is_showing_help = !tui_state.is_showing_help,
+        KeyCode::Char('?') => tui_state.is_showing_help = !tui_state.is_showing_help,
         KeyCode::Char(' ') => {
             let idx = tui_state
                 .cursor
@@ -219,7 +219,7 @@ fn render(frame: &mut Frame, tui_state: &mut TUIState) {
                 ))
                 .left_aligned(),
             )
-            .title_bottom(Line::from(" h for help ").right_aligned()),
+            .title_bottom(Line::from(" ? for help ").right_aligned()),
         main_area,
     );
     frame.render_widget(Block::default(), sub_area);
@@ -230,7 +230,7 @@ fn render(frame: &mut Frame, tui_state: &mut TUIState) {
 
 fn render_help_message(frame: &mut Frame) {
     // Setup
-    let popup_block = Block::bordered().title_top(Line::from("Help").centered());
+    let popup_block = Block::bordered().title_top(Line::from(" Help ").centered());
     let popup_area = popup_area(frame.area(), 40, 80);
     let content_area = popup_block.inner(popup_area);
 
