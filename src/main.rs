@@ -2,7 +2,7 @@ use log::{debug, warn};
 use rfpp::tui::TUILoopEvent;
 use rfpp::{pipe, tui};
 use std::env;
-use std::io::{self, stdin, IsTerminal};
+use std::io::{self, IsTerminal, stdin};
 use std::process::Command;
 
 struct Config {
