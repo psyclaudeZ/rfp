@@ -30,6 +30,8 @@ fn main() -> io::Result<()> {
             println!("No paths selected.");
         } else if action == TUILoopEvent::EarlyReturn {
             println!("No paths found.");
+        } else if action == TUILoopEvent::Interrupted {
+            println!("Interrupted.");
         }
     } else {
         Command::new(config.editor).args(paths).status()?;

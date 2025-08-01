@@ -1,4 +1,4 @@
-use crossterm::event::{self, Event, KeyCode, KeyEventKind};
+use crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers};
 use ratatui::{
     layout::{Flex, Layout, Rect},
     prelude::Constraint,
@@ -11,8 +11,9 @@ use std::io::{self};
 
 #[derive(PartialEq)]
 pub enum TUILoopEvent {
-    EarlyReturn,
     Continue,
+    EarlyReturn,
+    Interrupted,
     Quit,
     Submit,
 }
@@ -77,7 +78,6 @@ fn run_selection(
 ) -> io::Result<(Vec<String>, TUILoopEvent)> {
     loop {
         terminal.draw(|frame| render(frame, tui_state))?;
-        // TODO: error handling
         match handle_keypress(tui_state)? {
             TUILoopEvent::Continue => {}
             TUILoopEvent::Quit => break Ok((vec![], TUILoopEvent::Quit)),
@@ -93,6 +93,8 @@ fn run_selection(
                     TUILoopEvent::Submit,
                 ));
             }
+            // I guess this is a way of handling ctrl-c signals :/
+            TUILoopEvent::Interrupted => break Ok((vec![], TUILoopEvent::Interrupted)),
             TUILoopEvent::EarlyReturn => {
                 panic!("Key press yields an invalid event!");
             }
@@ -183,6 +185,10 @@ fn handle_keypress(tui_state: &mut TUIState) -> io::Result<TUILoopEvent> {
         KeyCode::Char('q') => return Ok(TUILoopEvent::Quit),
         KeyCode::Esc => return Ok(TUILoopEvent::Quit),
         KeyCode::Enter => return Ok(TUILoopEvent::Submit),
+        KeyCode::Char('c') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+            return Ok(TUILoopEvent::Interrupted);
+        }
+
         _ => return Ok(TUILoopEvent::Continue),
     }
     Ok(TUILoopEvent::Continue)
