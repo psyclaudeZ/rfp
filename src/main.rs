@@ -17,14 +17,28 @@ impl Default for Config {
     }
 }
 
+type ExitCode = i32;
+
+const EXIT_ERROR: ExitCode = 1;
+const EXIT_INTERRUPTED: ExitCode = 130;
+
 fn main() -> io::Result<()> {
     env_logger::init();
 
-    // TODO: along with others, handle the errors gracefully
-    let config = preflight_check()?;
+    let config = preflight_check().unwrap_or_else(|e| {
+        eprintln!("Error: {}", e);
+        std::process::exit(EXIT_ERROR);
+    });
 
-    let candidates = pipe::run()?;
-    let (paths, action) = tui::run(candidates)?;
+    let candidates = pipe::run().unwrap_or_else(|e| {
+        eprintln!("Error: {}", e);
+        std::process::exit(EXIT_ERROR);
+    });
+    let (paths, action) = tui::run(candidates).unwrap_or_else(|e| {
+        eprintln!("Error: {}", e);
+        std::process::exit(EXIT_ERROR);
+    });
+
     if paths.is_empty() {
         if action == TUILoopEvent::Submit {
             println!("No paths selected.");
@@ -32,6 +46,7 @@ fn main() -> io::Result<()> {
             println!("No paths found.");
         } else if action == TUILoopEvent::Interrupted {
             println!("Interrupted.");
+            std::process::exit(EXIT_INTERRUPTED);
         }
     } else {
         Command::new(config.editor).args(paths).status()?;
@@ -39,10 +54,9 @@ fn main() -> io::Result<()> {
     Ok(())
 }
 
-fn preflight_check() -> io::Result<Config> {
+fn preflight_check() -> Result<Config, Box<dyn std::error::Error>> {
     if stdin().is_terminal() {
-        eprintln!("Error: No input provided. Please pipe data to thie command.");
-        std::process::exit(2);
+        return Err("No input provided. Please pipe data to thie command.".into());
     }
     let mut config = Config::default();
     config.editor = env::var("EDITOR").unwrap_or_else(|_| {
