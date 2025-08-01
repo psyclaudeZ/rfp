@@ -11,6 +11,12 @@ pub struct FilePathParser {
     patterns: Vec<Regex>,
 }
 
+impl Default for FilePathParser {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl FilePathParser {
     pub fn new() -> Self {
         let patterns = vec![

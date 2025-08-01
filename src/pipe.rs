@@ -44,7 +44,7 @@ fn process_pipe_input() -> io::Result<Vec<String>> {
     let stdin = io::stdin();
     // TODO: come back to double check the perf for large input
     let reader = BufReader::new(stdin.lock());
-    return reader.lines().collect();
+    reader.lines().collect()
 }
 
 #[cfg(test)]
