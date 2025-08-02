@@ -26,16 +26,16 @@ fn main() -> io::Result<()> {
     env_logger::init();
 
     let config = preflight_check().unwrap_or_else(|e| {
-        eprintln!("Error: {}", e);
+        eprintln!("Error: {e}");
         std::process::exit(EXIT_ERROR);
     });
 
     let candidates = pipe::run().unwrap_or_else(|e| {
-        eprintln!("Error: {}", e);
+        eprintln!("Error: {e}");
         std::process::exit(EXIT_ERROR);
     });
     let (paths, action) = tui::run(candidates).unwrap_or_else(|e| {
-        eprintln!("Error: {}", e);
+        eprintln!("Error: {e}");
         std::process::exit(EXIT_ERROR);
     });
 
