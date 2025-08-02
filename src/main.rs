@@ -2,7 +2,7 @@ use log::{debug, warn};
 use rfp::tui::TUILoopEvent;
 use rfp::{pipe, tui};
 use std::env;
-use std::io::{self, stdin, IsTerminal};
+use std::io::{self, IsTerminal, stdin};
 use std::process::Command;
 
 struct Config {
@@ -30,7 +30,9 @@ fn main() -> io::Result<()> {
     if args.len() > 1 {
         match args[1].as_str() {
             "--help" | "-h" => {
-                println!("rfp - lets you interactively select files from piped input and open them in your editor\n\nUsage: <command> | rfp");
+                println!(
+                    "rfp - lets you interactively select files from piped input and open them in your editor\n\nUsage: <command> | rfp"
+                );
                 return Ok(());
             }
             "--version" | "-v" | "version" => {
