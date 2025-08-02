@@ -2,7 +2,7 @@ use log::{debug, warn};
 use rfp::tui::TUILoopEvent;
 use rfp::{pipe, tui};
 use std::env;
-use std::io::{self, stdin, IsTerminal};
+use std::io::{self, IsTerminal, stdin};
 use std::process::Command;
 
 struct Config {
