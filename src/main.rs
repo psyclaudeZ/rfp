@@ -1,8 +1,8 @@
 use log::{debug, warn};
-use rfpp::tui::TUILoopEvent;
-use rfpp::{pipe, tui};
+use rfp::tui::TUILoopEvent;
+use rfp::{pipe, tui};
 use std::env;
-use std::io::{self, IsTerminal, stdin};
+use std::io::{self, stdin, IsTerminal};
 use std::process::Command;
 
 struct Config {

@@ -1,4 +1,4 @@
-//! # rfpp - Rust PathPicker
+//! # rfp - Rust File Picker
 //!
 //! A Rust rewrite of [Facebook PathPicker](https://github.com/facebook/PathPicker).
 //!
