@@ -20,6 +20,8 @@ git grep -i 'TODO' | rfp
 git ls-files | rfp
 ```
 
+Press `?` for help on motions and functions.
+
 ## Acknowledgements
 
 This project began as a learning exercise to explore Rust and is heavily inspired by [Facebook PathPicker](https://github.com/facebook/PathPicker/), a tool I've been using since it was born.
