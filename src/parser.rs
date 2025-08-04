@@ -1,5 +1,4 @@
 use regex::Regex;
-// use std::path::Path;
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct MatchResult {
@@ -19,8 +18,12 @@ impl Default for FilePathParser {
 
 impl FilePathParser {
     pub fn new() -> Self {
+        // TODO(bz): single files, files with spaces
         let patterns = vec![
-            // Standard path. a/b/c.ext:123
+            // Standard homedir path. ~/a/b/c.ext:123
+            Regex::new(r"(~/([a-zA-Z0-9._-]+/)*[a-zA-Z0-9._-]+\.[a-zA-Z0-9]{1,10})[:-]?(\d+)?")
+                .unwrap(),
+            // Standard path with extension. a/b/c.ext:123
             Regex::new(r"(/?([a-zA-Z0-9._-]+/)*[a-zA-Z0-9._-]+\.[a-zA-Z0-9]{1,10})[:-]?(\d+)?")
                 .unwrap(),
         ];
@@ -31,7 +34,7 @@ impl FilePathParser {
         // -> Option<MatchResult> {
         for pattern in &self.patterns {
             if let Some(captures) = pattern.captures(line) {
-                let path = captures.get(1)?.as_str();
+                let path = self.post_processing(captures.get(1)?.as_str());
                 let line_number = captures.get(3).and_then(|m| m.as_str().parse().ok());
 
                 return Some(MatchResult {
@@ -41,6 +44,14 @@ impl FilePathParser {
             }
         }
         None
+    }
+
+    fn post_processing<'a>(&self, line: &'a str) -> &'a str {
+        // git diff
+        if line.starts_with("a/") || line.starts_with("b/") {
+            return &line[2..];
+        }
+        line
     }
 }
 
@@ -80,8 +91,38 @@ mod tests {
     }
 
     #[test]
-    fn cannot_match_line_without_extension() {
+    fn can_match_homedir() {
         let parser = FilePathParser::new();
-        assert_eq!(parser.match_line("/abc/def:123"), None);
+        assert_eq!(
+            parser.match_line("~/a/b/c.rs").unwrap(),
+            MatchResult {
+                path: String::from("~/a/b/c.rs"),
+                line_number: None,
+            }
+        );
+    }
+
+    #[test]
+    fn can_match_a_single_file_with_extension() {
+        let parser = FilePathParser::new();
+        assert_eq!(
+            parser.match_line("file.rs").unwrap(),
+            MatchResult {
+                path: String::from("file.rs"),
+                line_number: None,
+            }
+        );
+    }
+
+    #[test]
+    fn can_match_git_diff_path() {
+        let parser = FilePathParser::new();
+        assert_eq!(
+            parser.match_line("a/abc/d/e.rs:123").unwrap(),
+            MatchResult {
+                path: String::from("abc/d/e.rs"),
+                line_number: Some(123),
+            }
+        );
     }
 }

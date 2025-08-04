@@ -59,7 +59,7 @@ mod tests {
 
     #[test]
     fn produces_no_duplicates() {
-        assert_helper(vec!["a/b/c.rs", "a/b/c.rs"], vec!["a/b/c.rs"]);
+        assert_helper(vec!["abc/d/e.rs", "abc/d/e.rs"], vec!["abc/d/e.rs"]);
     }
 
     #[test]
