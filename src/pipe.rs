@@ -64,6 +64,9 @@ mod tests {
 
     #[test]
     fn order_is_retained() {
-        assert_helper(vec!["c.rs", "b.rs", "a.rs"], vec!["c.rs", "b.rs", "a.rs"]);
+        assert_helper(
+            vec!["abc/c.rs", "abc/b.rs", "abc/a.rs"],
+            vec!["abc/c.rs", "abc/b.rs", "abc/a.rs"],
+        );
     }
 }
