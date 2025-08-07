@@ -1,19 +1,13 @@
 use regex::Regex;
 
+pub trait Matcher {
+    fn match_line(&self, line: &str) -> Option<MatchResult>;
+}
+
 #[derive(Debug, Eq, PartialEq)]
 pub struct MatchResult {
     pub path: String,
     pub line_number: Option<u32>,
-}
-
-pub struct FilePathParser {
-    regex_configs: Vec<RegexConfig>,
-}
-
-impl Default for FilePathParser {
-    fn default() -> Self {
-        Self::new()
-    }
 }
 
 struct RegexConfig {
@@ -21,9 +15,44 @@ struct RegexConfig {
     line_number_idx: usize,
 }
 
-impl FilePathParser {
+pub struct RegexMatcher {
+    regex_configs: Vec<RegexConfig>,
+}
+
+impl Default for RegexMatcher {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Matcher for RegexMatcher {
+    fn match_line(&self, line: &str) -> Option<MatchResult> {
+        // -> Option<MatchResult> {
+        for regex_config in &self.regex_configs {
+            let RegexConfig {
+                regex,
+                line_number_idx,
+            } = regex_config;
+
+            if let Some(captures) = regex.captures(line) {
+                let path = self.post_processing(captures.get(1)?.as_str());
+                let line_number = captures
+                    .get(*line_number_idx)
+                    .and_then(|m| m.as_str().parse().ok());
+
+                return Some(MatchResult {
+                    path: path.to_string(),
+                    line_number,
+                });
+            }
+        }
+        None
+    }
+}
+
+impl RegexMatcher {
     pub fn new() -> Self {
-        // TODO(bz): single files, files/paths with spaces
+        // TODO(bz): files/paths with spaces
         let regex_configs = vec![
             // Homedir paths. ~/a/b/c.ext:123
             RegexConfig {
@@ -50,29 +79,6 @@ impl FilePathParser {
         Self { regex_configs }
     }
 
-    pub fn match_line(&self, line: &str) -> Option<MatchResult> {
-        // -> Option<MatchResult> {
-        for regex_config in &self.regex_configs {
-            let RegexConfig {
-                regex,
-                line_number_idx,
-            } = regex_config;
-
-            if let Some(captures) = regex.captures(line) {
-                let path = self.post_processing(captures.get(1)?.as_str());
-                let line_number = captures
-                    .get(*line_number_idx)
-                    .and_then(|m| m.as_str().parse().ok());
-
-                return Some(MatchResult {
-                    path: path.to_string(),
-                    line_number,
-                });
-            }
-        }
-        None
-    }
-
     fn post_processing<'a>(&self, line: &'a str) -> &'a str {
         // git diff
         if line.starts_with("a/") || line.starts_with("b/") {
@@ -84,11 +90,11 @@ impl FilePathParser {
 
 #[cfg(test)]
 mod tests {
-    use crate::parser::{FilePathParser, MatchResult};
+    use crate::parser::{MatchResult, Matcher, RegexMatcher};
 
     #[test]
     fn can_match_standard_path_no_line_number() {
-        let parser = FilePathParser::new();
+        let parser = RegexMatcher::new();
         assert_eq!(
             parser.match_line("/abc/def/g.e").unwrap(),
             MatchResult {
@@ -100,7 +106,7 @@ mod tests {
 
     #[test]
     fn can_match_standard_path_with_line_number() {
-        let parser = FilePathParser::new();
+        let parser = RegexMatcher::new();
         assert_eq!(
             parser.match_line("/abc/def/g.e:123").unwrap(),
             MatchResult {
@@ -112,7 +118,7 @@ mod tests {
 
     #[test]
     fn can_match_standard_path_without_extension() {
-        let parser = FilePathParser::new();
+        let parser = RegexMatcher::new();
         assert_eq!(
             parser.match_line("/abc/def/g").unwrap(),
             MatchResult {
@@ -124,7 +130,7 @@ mod tests {
 
     #[test]
     fn can_match_homedir_default() {
-        let parser = FilePathParser::new();
+        let parser = RegexMatcher::new();
         assert_eq!(
             parser.match_line("~/a/b/c.rs").unwrap(),
             MatchResult {
@@ -136,7 +142,7 @@ mod tests {
 
     #[test]
     fn can_match_homedir_single_file_with_extension() {
-        let parser = FilePathParser::new();
+        let parser = RegexMatcher::new();
         assert_eq!(
             parser.match_line("~/file.rs:42").unwrap(),
             MatchResult {
@@ -148,7 +154,7 @@ mod tests {
 
     #[test]
     fn can_match_homedir_single_file_without_extension() {
-        let parser = FilePathParser::new();
+        let parser = RegexMatcher::new();
         assert_eq!(
             parser.match_line("~/file").unwrap(),
             MatchResult {
@@ -160,7 +166,7 @@ mod tests {
 
     #[test]
     fn can_match_git_diff_path() {
-        let parser = FilePathParser::new();
+        let parser = RegexMatcher::new();
         assert_eq!(
             parser.match_line("a/abc/d/e.rs:123").unwrap(),
             MatchResult {
@@ -172,7 +178,7 @@ mod tests {
 
     #[test]
     fn can_match_a_single_file_with_extension() {
-        let parser = FilePathParser::new();
+        let parser = RegexMatcher::new();
         assert_eq!(
             parser.match_line("file.rs").unwrap(),
             MatchResult {
@@ -184,7 +190,7 @@ mod tests {
 
     #[test]
     fn can_match_a_single_file_at_root_with_extension() {
-        let parser = FilePathParser::new();
+        let parser = RegexMatcher::new();
         assert_eq!(
             parser.match_line("/file.rs").unwrap(),
             MatchResult {
@@ -196,7 +202,7 @@ mod tests {
 
     #[test]
     fn can_match_a_file_with_long_extension() {
-        let parser = FilePathParser::new();
+        let parser = RegexMatcher::new();
         assert_eq!(
             parser
                 .match_line("f.l.i.l.e.asomehowsuperduperlongextension")
@@ -210,7 +216,7 @@ mod tests {
 
     #[test]
     fn can_match_in_an_error_message() {
-        let parser = FilePathParser::new();
+        let parser = RegexMatcher::new();
         assert_eq!(
             parser
                 .match_line("error: file not found in project/file.txt")
