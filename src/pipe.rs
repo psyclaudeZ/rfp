@@ -1,4 +1,4 @@
-use crate::parser::FilePathParser;
+use crate::parser::{Matcher, RegexMatcher};
 use log::debug;
 use std::collections::HashSet;
 use std::io::{self, BufRead, BufReader};
@@ -11,7 +11,7 @@ pub fn run() -> io::Result<Vec<String>> {
 }
 
 fn run_with_input(lines: Vec<String>) -> io::Result<Vec<String>> {
-    let parser = FilePathParser::new();
+    let parser = RegexMatcher::new();
     let mut matches = vec![];
     let mut seen: HashSet<String> = HashSet::new();
 
