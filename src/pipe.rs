@@ -1,4 +1,4 @@
-use crate::parser::{Matcher, RegexMatcher};
+use crate::parser::{Matcher, RegexMatcher, SingleFileMatcher};
 use log::debug;
 use std::collections::HashSet;
 use std::io::{self, BufRead, BufReader};
@@ -11,19 +11,24 @@ pub fn run() -> io::Result<Vec<String>> {
 }
 
 fn run_with_input(lines: Vec<String>) -> io::Result<Vec<String>> {
-    let parser = RegexMatcher::new();
+    let parsers: Vec<Box<dyn Matcher>> = vec![
+        Box::new(RegexMatcher::new()),
+        Box::new(SingleFileMatcher::new()),
+    ];
     let mut matches = vec![];
     let mut seen: HashSet<String> = HashSet::new();
 
-    for line in lines {
-        if let Some(match_result) = parser.match_line(&line) {
-            debug!(
-                "Matched: {} on line {:?}",
-                match_result.path, match_result.line_number
-            );
-            if file_exists(&match_result.path) && !seen.contains(&match_result.path) {
-                seen.insert(match_result.path.clone());
-                matches.push(match_result.path);
+    for line in &lines {
+        for parser in &parsers {
+            if let Some(match_result) = parser.match_line(line) {
+                debug!(
+                    "Matched: {} on line {:?}",
+                    match_result.path, match_result.line_number
+                );
+                if file_exists(&match_result.path) && !seen.contains(&match_result.path) {
+                    seen.insert(match_result.path.clone());
+                    matches.push(match_result.path);
+                }
             }
         }
     }

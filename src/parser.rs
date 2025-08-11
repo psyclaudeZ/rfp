@@ -1,4 +1,6 @@
+use lazy_static::lazy_static;
 use regex::Regex;
+use std::collections::HashSet;
 
 pub trait Matcher {
     fn match_line(&self, line: &str) -> Option<MatchResult>;
@@ -88,9 +90,76 @@ impl RegexMatcher {
     }
 }
 
+lazy_static! {
+    static ref SINGLE_FILE_REGEX: Regex = Regex::new(r"\b([a-zA-Z0-9_-]+)[:-]?(\d+)?\b").unwrap();
+}
+
+/// This is a matcher specialized for matching single files (as opposed to paths), particularly
+/// extension-less single files since ones with extension have already been captured by the
+/// RegexMatcher.
+///
+/// Unlike how fpp handles the case, this matcher uses a heuristic where if a single file is
+/// supposed to show up in the selection view, it's very likely that the file is located exactly at
+/// the cwd. Therefore, it simply caches all the files in cwd and checks agsint each line.
+pub struct SingleFileMatcher {
+    cached_single_files: HashSet<String>,
+}
+
+impl Default for SingleFileMatcher {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl SingleFileMatcher {
+    pub fn new() -> Self {
+        let cwd = match std::env::current_dir() {
+            Ok(dir) => dir,
+            Err(_) => {
+                eprintln!(
+                    "Warning: Could not get current directory, unable to match single files without extension"
+                );
+                return Self {
+                    cached_single_files: HashSet::new(),
+                };
+            }
+        };
+        let single_files = std::fs::read_dir(cwd)
+            .map(|read_dir| {
+                read_dir
+                    .filter_map(|res| res.ok())
+                    .filter(|e| e.path().is_file())
+                    .map(|e| e.file_name().to_string_lossy().to_string())
+                    .filter(|p| !p.contains("."))
+                    .collect::<HashSet<String>>()
+            })
+            .unwrap_or_else(|_| HashSet::new());
+
+        Self {
+            cached_single_files: single_files,
+        }
+    }
+}
+
+impl Matcher for SingleFileMatcher {
+    fn match_line(&self, line: &str) -> Option<MatchResult> {
+        for capture in SINGLE_FILE_REGEX.captures_iter(line) {
+            let word = capture.get(1)?.as_str();
+            if self.cached_single_files.contains(word) {
+                let line_number = capture.get(2).and_then(|m| m.as_str().parse().ok());
+                return Some(MatchResult {
+                    path: word.to_string(),
+                    line_number,
+                });
+            }
+        }
+        None
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::parser::{MatchResult, Matcher, RegexMatcher};
+    use crate::parser::{MatchResult, Matcher, RegexMatcher, SingleFileMatcher};
 
     #[test]
     fn can_match_standard_path_no_line_number() {
@@ -223,6 +292,21 @@ mod tests {
                 .unwrap(),
             MatchResult {
                 path: String::from("project/file.txt"),
+                line_number: None,
+            }
+        );
+    }
+
+    /// Assuming cwd is at the root of the project, which seems to be an invariant.
+    #[test]
+    fn can_match_single_extensionless_file_in_the_directory() {
+        let parser = SingleFileMatcher::new();
+        assert_eq!(
+            parser
+                .match_line("you might want to read the LICENSE")
+                .unwrap(),
+            MatchResult {
+                path: String::from("LICENSE"),
                 line_number: None,
             }
         );
