@@ -159,13 +159,13 @@ impl Matcher for SingleFileMatcher {
 
 #[cfg(test)]
 mod tests {
-    use crate::parser::{MatchResult, Matcher, RegexMatcher, SingleFileMatcher};
+    use crate::matcher::{MatchResult, Matcher, RegexMatcher, SingleFileMatcher};
 
     #[test]
     fn can_match_standard_path_no_line_number() {
-        let parser = RegexMatcher::new();
+        let matcher = RegexMatcher::new();
         assert_eq!(
-            parser.match_line("/abc/def/g.e").unwrap(),
+            matcher.match_line("/abc/def/g.e").unwrap(),
             MatchResult {
                 path: String::from("/abc/def/g.e"),
                 line_number: None,
@@ -175,9 +175,9 @@ mod tests {
 
     #[test]
     fn can_match_standard_path_with_line_number() {
-        let parser = RegexMatcher::new();
+        let matcher = RegexMatcher::new();
         assert_eq!(
-            parser.match_line("/abc/def/g.e:123").unwrap(),
+            matcher.match_line("/abc/def/g.e:123").unwrap(),
             MatchResult {
                 path: String::from("/abc/def/g.e"),
                 line_number: Some(123),
@@ -187,9 +187,9 @@ mod tests {
 
     #[test]
     fn can_match_standard_path_without_extension() {
-        let parser = RegexMatcher::new();
+        let matcher = RegexMatcher::new();
         assert_eq!(
-            parser.match_line("/abc/def/g").unwrap(),
+            matcher.match_line("/abc/def/g").unwrap(),
             MatchResult {
                 path: String::from("/abc/def/g"),
                 line_number: None,
@@ -199,9 +199,9 @@ mod tests {
 
     #[test]
     fn can_match_homedir_default() {
-        let parser = RegexMatcher::new();
+        let matcher = RegexMatcher::new();
         assert_eq!(
-            parser.match_line("~/a/b/c.rs").unwrap(),
+            matcher.match_line("~/a/b/c.rs").unwrap(),
             MatchResult {
                 path: String::from("~/a/b/c.rs"),
                 line_number: None,
@@ -211,9 +211,9 @@ mod tests {
 
     #[test]
     fn can_match_homedir_single_file_with_extension() {
-        let parser = RegexMatcher::new();
+        let matcher = RegexMatcher::new();
         assert_eq!(
-            parser.match_line("~/file.rs:42").unwrap(),
+            matcher.match_line("~/file.rs:42").unwrap(),
             MatchResult {
                 path: String::from("~/file.rs"),
                 line_number: Some(42),
@@ -223,9 +223,9 @@ mod tests {
 
     #[test]
     fn can_match_homedir_single_file_without_extension() {
-        let parser = RegexMatcher::new();
+        let matcher = RegexMatcher::new();
         assert_eq!(
-            parser.match_line("~/file").unwrap(),
+            matcher.match_line("~/file").unwrap(),
             MatchResult {
                 path: String::from("~/file"),
                 line_number: None,
@@ -235,9 +235,9 @@ mod tests {
 
     #[test]
     fn can_match_git_diff_path() {
-        let parser = RegexMatcher::new();
+        let matcher = RegexMatcher::new();
         assert_eq!(
-            parser.match_line("a/abc/d/e.rs:123").unwrap(),
+            matcher.match_line("a/abc/d/e.rs:123").unwrap(),
             MatchResult {
                 path: String::from("abc/d/e.rs"),
                 line_number: Some(123),
@@ -247,9 +247,9 @@ mod tests {
 
     #[test]
     fn can_match_a_single_file_with_extension() {
-        let parser = RegexMatcher::new();
+        let matcher = RegexMatcher::new();
         assert_eq!(
-            parser.match_line("file.rs").unwrap(),
+            matcher.match_line("file.rs").unwrap(),
             MatchResult {
                 path: String::from("file.rs"),
                 line_number: None,
@@ -259,9 +259,9 @@ mod tests {
 
     #[test]
     fn can_match_a_single_file_at_root_with_extension() {
-        let parser = RegexMatcher::new();
+        let matcher = RegexMatcher::new();
         assert_eq!(
-            parser.match_line("/file.rs").unwrap(),
+            matcher.match_line("/file.rs").unwrap(),
             MatchResult {
                 path: String::from("/file.rs"),
                 line_number: None,
@@ -271,9 +271,9 @@ mod tests {
 
     #[test]
     fn can_match_a_file_with_long_extension() {
-        let parser = RegexMatcher::new();
+        let matcher = RegexMatcher::new();
         assert_eq!(
-            parser
+            matcher
                 .match_line("f.l.i.l.e.asomehowsuperduperlongextension")
                 .unwrap(),
             MatchResult {
@@ -285,9 +285,9 @@ mod tests {
 
     #[test]
     fn can_match_in_an_error_message() {
-        let parser = RegexMatcher::new();
+        let matcher = RegexMatcher::new();
         assert_eq!(
-            parser
+            matcher
                 .match_line("error: file not found in project/file.txt")
                 .unwrap(),
             MatchResult {
@@ -300,9 +300,9 @@ mod tests {
     /// Assuming cwd is at the root of the project, which seems to be an invariant.
     #[test]
     fn can_match_single_extensionless_file_in_the_directory() {
-        let parser = SingleFileMatcher::new();
+        let matcher = SingleFileMatcher::new();
         assert_eq!(
-            parser
+            matcher
                 .match_line("you might want to read the LICENSE")
                 .unwrap(),
             MatchResult {
