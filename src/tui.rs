@@ -7,6 +7,7 @@ use ratatui::{
     text::Line,
     widgets::{Block, Clear, List, ListItem, ListState, Paragraph, Wrap},
 };
+use std::collections::BTreeSet;
 use std::io::{self};
 
 #[derive(PartialEq)]
@@ -23,7 +24,7 @@ struct TUIState {
     is_showing_help: bool,
     items: Vec<String>,
     main_area_height: u16,
-    selected: Vec<bool>,
+    selected: BTreeSet<usize>,
 }
 
 // h, l -
@@ -48,13 +49,12 @@ const HELP_MESSAGE_ENTRIES: &[(&str, &str)] = &[
 impl TUIState {
     fn new(items: Vec<String>) -> TUIState {
         assert!(!items.is_empty());
-        let len = items.len();
         let mut s = ListState::default();
         s.select(Some(0));
         TUIState {
             items,
             cursor: s,
-            selected: vec![false; len],
+            selected: BTreeSet::new(),
             main_area_height: 0,
             is_showing_help: false,
         }
@@ -86,9 +86,7 @@ fn run_selection(
                     tui_state
                         .selected
                         .iter()
-                        .enumerate()
-                        .filter(|(_, is_selected)| **is_selected)
-                        .map(|(i, _)| tui_state.items[i].clone())
+                        .map(|i| tui_state.items[*i].clone())
                         .collect(),
                     TUILoopEvent::Submit,
                 ));
@@ -173,13 +171,20 @@ fn handle_keypress(tui_state: &mut TUIState) -> io::Result<TUILoopEvent> {
                 .cursor
                 .selected()
                 .expect("There should always be one item selected.");
-            tui_state.selected[idx] = !tui_state.selected[idx];
+            if tui_state.selected.contains(&idx) {
+                tui_state.selected.remove(&idx);
+            } else {
+                tui_state.selected.insert(idx);
+            }
         }
         KeyCode::Char('a') => {
-            if tui_state.selected.iter().all(|&s| s) {
-                tui_state.selected.fill(false)
+            if tui_state.selected.len() == tui_state.items.len() {
+                tui_state.selected.clear();
             } else {
-                tui_state.selected.fill(true)
+                tui_state.selected.clear();
+                for i in 0..tui_state.items.len() {
+                    tui_state.selected.insert(i);
+                }
             }
         }
         KeyCode::Char('q') => return Ok(TUILoopEvent::Quit),
@@ -200,7 +205,7 @@ fn render(frame: &mut Frame, tui_state: &mut TUIState) {
         .iter()
         .enumerate()
         .map(|(i, item)| {
-            ListItem::new(item.as_str()).style(if tui_state.selected[i] {
+            ListItem::new(item.as_str()).style(if tui_state.selected.contains(&i) {
                 Style::default().bg(Color::LightBlue)
             } else {
                 Style::default()
