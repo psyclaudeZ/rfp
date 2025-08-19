@@ -1,11 +1,11 @@
 use crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers};
 use ratatui::{
+    DefaultTerminal, Frame,
     layout::{Flex, Layout, Rect},
     prelude::Constraint,
     style::{Color, Style},
     text::Line,
     widgets::{Block, Clear, List, ListItem, ListState, Paragraph, Wrap},
-    DefaultTerminal, Frame,
 };
 use std::collections::BTreeSet;
 use std::io::{self};
@@ -164,7 +164,7 @@ fn handle_keypress(tui_state: &mut TUIState) -> io::Result<TUILoopEvent> {
         }
         KeyCode::Char('h') | KeyCode::Left => {
             let current = tui_state.cursor.selected().unwrap();
-            if tui_state.selected.len() == 0 {
+            if tui_state.selected.is_empty() {
             } else if let Some(&prev) = tui_state.selected.range(..current).next_back() {
                 tui_state.cursor.select(Some(prev));
             } else {
@@ -173,7 +173,7 @@ fn handle_keypress(tui_state: &mut TUIState) -> io::Result<TUILoopEvent> {
         }
         KeyCode::Char('l') | KeyCode::Right => {
             let current = tui_state.cursor.selected().unwrap();
-            if tui_state.selected.len() == 0 {
+            if tui_state.selected.is_empty() {
             } else if let Some(&next) = tui_state.selected.range(current + 1..).next() {
                 tui_state.cursor.select(Some(next));
             } else {
