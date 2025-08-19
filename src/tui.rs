@@ -1,11 +1,11 @@
 use crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers};
 use ratatui::{
-    DefaultTerminal, Frame,
     layout::{Flex, Layout, Rect},
     prelude::Constraint,
     style::{Color, Style},
     text::Line,
     widgets::{Block, Clear, List, ListItem, ListState, Paragraph, Wrap},
+    DefaultTerminal, Frame,
 };
 use std::collections::BTreeSet;
 use std::io::{self};
@@ -27,14 +27,9 @@ struct TUIState {
     selected: BTreeSet<usize>,
 }
 
-// h, l -
 const HELP_MESSAGE_ENTRIES: &[(&str, &str)] = &[
     ("q", "Exit"),
     ("?", "Toggle help"),
-    ("", ""),
-    ("space", "Toggle selection"),
-    ("enter", "Open selected files"),
-    ("a", "Select all/none"),
     ("", ""),
     ("k/↑", "Move up"),
     ("j/↓", "Move down"),
@@ -44,6 +39,12 @@ const HELP_MESSAGE_ENTRIES: &[(&str, &str)] = &[
     ("f/PgDn", "Full page down"),
     ("g/Home", "Go to top"),
     ("G/End", "Go to bottom"),
+    ("", ""),
+    ("space", "Toggle selection"),
+    ("enter", "Open selected files"),
+    ("a", "Select all/none"),
+    ("h/←", "Previous selected"),
+    ("l/→", "Next selected"),
 ];
 
 impl TUIState {
@@ -159,6 +160,24 @@ fn handle_keypress(tui_state: &mut TUIState) -> io::Result<TUILoopEvent> {
                 tui_state.cursor.select_last()
             } else {
                 tui_state.cursor.scroll_up_by(tui_state.main_area_height);
+            }
+        }
+        KeyCode::Char('h') | KeyCode::Left => {
+            let current = tui_state.cursor.selected().unwrap();
+            if tui_state.selected.len() == 0 {
+            } else if let Some(&prev) = tui_state.selected.range(..current).next_back() {
+                tui_state.cursor.select(Some(prev));
+            } else {
+                tui_state.cursor.select(tui_state.selected.last().copied());
+            }
+        }
+        KeyCode::Char('l') | KeyCode::Right => {
+            let current = tui_state.cursor.selected().unwrap();
+            if tui_state.selected.len() == 0 {
+            } else if let Some(&next) = tui_state.selected.range(current + 1..).next() {
+                tui_state.cursor.select(Some(next));
+            } else {
+                tui_state.cursor.select(tui_state.selected.first().copied());
             }
         }
         // top of the list
