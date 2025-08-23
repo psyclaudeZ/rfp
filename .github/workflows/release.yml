@@ -64,10 +64,10 @@ jobs:
           lipo -create \
             target/x86_64-apple-darwin/release/rfp \
             target/aarch64-apple-darwin/release/rfp \
-            -output rfp-universal
-          tar -czf rfp-universal-apple-darwin.tar.gz rfp-universal
+            -output target/rfp-universal
+          tar -czf target/rfp-universal-apple-darwin.tar.gz -C target rfp-universal
           echo "Binary SHA256:"
-          shasum -a 256 rfp-universal-apple-darwin.tar.gz
+          shasum -a 256 target/rfp-universal-apple-darwin.tar.gz
 
       - name: Publish to crates.io
         if: steps.check-tags.outputs.skip_release == 'false'
@@ -78,5 +78,5 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ steps.check-tags.outputs.release_tag }}
-          files: rfp-universal-apple-darwin.tar.gz
+          files: target/rfp-universal-apple-darwin.tar.gz
           draft: true
