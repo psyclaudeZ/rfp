@@ -6,8 +6,17 @@ A Rust rewrite of [fpp](https://github.com/facebook/PathPicker) that lets you in
 
 ## Installation
 
+### macOS
+
 ```bash
-cargo instsall rfp
+brew tap psyclaudeZ/rfp
+brew install rfp
+```
+
+### Other platforms
+
+```bash
+cargo install rfp
 ```
 
 ## Usage
