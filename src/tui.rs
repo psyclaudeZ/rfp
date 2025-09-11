@@ -224,15 +224,21 @@ fn render(frame: &mut Frame, tui_state: &mut TUIState) {
         .iter()
         .enumerate()
         .map(|(i, item)| {
-            ListItem::new(item.as_str()).style(if tui_state.selected.contains(&i) {
-                Style::default().bg(Color::LightBlue)
+            let display_text = if tui_state.selected.contains(&i) {
+                format!("[✓] {}", item.as_str())
+            } else {
+                format!("[ ] {}", item.as_str())
+            };
+            let style = if tui_state.cursor.selected() == Some(i) {
+                Style::default().bg(Color::Black).fg(Color::Cyan)
             } else {
                 Style::default()
-            })
+            };
+            ListItem::new(display_text).style(style)
         })
         .collect();
     let list = List::new(items)
-        .highlight_symbol(">>")
+        // .highlight_symbol("  ")
         .block(Block::bordered());
     let [main_area, sub_area] =
         Layout::vertical([Constraint::Percentage(98), Constraint::Percentage(2)])
