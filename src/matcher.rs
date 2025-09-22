@@ -12,6 +12,7 @@ pub struct MatchResult {
     pub line_number: Option<u32>,
 }
 
+#[derive(Clone)]
 struct RegexConfig {
     regex: Regex,
     line_number_idx: usize,
@@ -52,33 +53,38 @@ impl Matcher for RegexMatcher {
     }
 }
 
+lazy_static! {
+    // TODO(bz): files/paths with spaces
+    static ref REGEX_CONFIGS: Vec<RegexConfig> = vec![
+        // Homedir paths. ~/a/b/c.ext:123
+        RegexConfig {
+            regex: Regex::new(
+                r"(~/([a-zA-Z0-9._-]+/)*[a-zA-Z0-9._-]+(\.[a-zA-Z0-9]{1,42})?)[:-]?(\d+)?",
+            )
+            .unwrap(),
+            line_number_idx: 4,
+        },
+        // Standard paths, w/ or w/o extension. a/b/c.ext:123
+        RegexConfig {
+            regex: Regex::new(
+                r"(/?([a-zA-Z0-9._-]+/)+[a-zA-Z0-9._-]+(\.[a-zA-Z0-9]{1,42})?)[:-]?(\d+)?",
+            )
+            .unwrap(),
+            line_number_idx: 4,
+        },
+        // Single file with extension
+        RegexConfig {
+            regex: Regex::new(r"(/?[a-zA-Z0-9._-]+\.[a-zA-Z0-9]{1,42})[:-]?(\d+)?").unwrap(),
+            line_number_idx: 2,
+        },
+    ];
+}
+
 impl RegexMatcher {
     pub fn new() -> Self {
-        // TODO(bz): files/paths with spaces
-        let regex_configs = vec![
-            // Homedir paths. ~/a/b/c.ext:123
-            RegexConfig {
-                regex: Regex::new(
-                    r"(~/([a-zA-Z0-9._-]+/)*[a-zA-Z0-9._-]+(\.[a-zA-Z0-9]{1,42})?)[:-]?(\d+)?",
-                )
-                .unwrap(),
-                line_number_idx: 4,
-            },
-            // Standard paths, w/ or w/o extension. a/b/c.ext:123
-            RegexConfig {
-                regex: Regex::new(
-                    r"(/?([a-zA-Z0-9._-]+/)+[a-zA-Z0-9._-]+(\.[a-zA-Z0-9]{1,42})?)[:-]?(\d+)?",
-                )
-                .unwrap(),
-                line_number_idx: 4,
-            },
-            // Single file with extension
-            RegexConfig {
-                regex: Regex::new(r"(/?[a-zA-Z0-9._-]+\.[a-zA-Z0-9]{1,42})[:-]?(\d+)?").unwrap(),
-                line_number_idx: 2,
-            },
-        ];
-        Self { regex_configs }
+        Self {
+            regex_configs: REGEX_CONFIGS.clone(),
+        }
     }
 
     fn post_processing<'a>(&self, line: &'a str) -> &'a str {
