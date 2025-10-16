@@ -3,7 +3,7 @@ use ratatui::{
     DefaultTerminal, Frame,
     layout::{Flex, Layout, Rect},
     prelude::Constraint,
-    style::{Color, Style},
+    style::{Color, Style, Stylize},
     text::Line,
     widgets::{Block, Clear, List, ListItem, ListState, Paragraph, Wrap},
 };
@@ -225,12 +225,15 @@ fn render(frame: &mut Frame, tui_state: &mut TUIState) {
         .enumerate()
         .map(|(i, item)| {
             let display_text = if tui_state.selected.contains(&i) {
-                format!("[✓] {}", item.as_str())
+                format!("[●] {}", item.as_str())
             } else {
                 format!("[ ] {}", item.as_str())
             };
             let style = if tui_state.cursor.selected() == Some(i) {
-                Style::default().bg(Color::Black).fg(Color::Cyan)
+                Style::default()
+                    .bg(Color::Reset)
+                    .fg(Color::Reset)
+                    .reversed()
             } else {
                 Style::default()
             };
